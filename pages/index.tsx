@@ -36,44 +36,19 @@ export default function Home() {
       throw new Error(response.statusText);
     }
 
-    const data = response.body;
-
+    const data = await response.json();
     if (!data) {
       return;
     }
 
     setLoading(false);
-
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    let isFirst = true;
-
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      const chunkValue = decoder.decode(value);
-
-      if (isFirst) {
-        isFirst = false;
-        setMessages((messages) => [
-          ...messages,
-          {
-            role: "assistant",
-            content: chunkValue
-          }
-        ]);
-      } else {
-        setMessages((messages) => {
-          const lastMessage = messages[messages.length - 1];
-          const updatedMessage = {
-            ...lastMessage,
-            content: lastMessage.content + chunkValue
-          };
-          return [...messages.slice(0, -1), updatedMessage];
-        });
+    setMessages((messages) => [
+      ...messages,
+      {
+        role: "assistant",
+        content: data.answer
       }
-    }
+    ]);
   };
 
   useEffect(() => {
@@ -84,7 +59,7 @@ export default function Home() {
     setMessages([
       {
         role: "assistant",
-        content: `Hi there! I'm Chatbot UI, an AI assistant. I can help you with things like answering questions, providing information, and helping with tasks. How can I help you?`
+        content: `Chào anh Dũng. Em là Nhy, trí tuệ nhân tạo phát triển bởi Finhay ạ.`
       }
     ]);
   }, []);
