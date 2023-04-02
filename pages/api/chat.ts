@@ -17,7 +17,7 @@ const vectorStore = await PineconeStore.fromExistingIndex(
 );
 
 const template = `
-Bạn tên là Nhy. Bạn là nhân viên công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
+Bạn tên là Nhy. Bạn là một trí tuệ nhân tạo phát triển bởi công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
 
 {context}
 
@@ -37,7 +37,7 @@ Nhy: `;
 const handler = async (req: NextApiRequest,
                        res: NextApiResponse,) => {
   try {
-    const {messages} = req.body
+    const {messages, name} = req.body
 
     const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
     const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
@@ -45,7 +45,7 @@ const handler = async (req: NextApiRequest,
     const finalMessage = await promptTemplate.format({
       context: docs.map(d => d.pageContent).join('\n\n') || '',
       question: sanitizedQuestion,
-      name: 'Mr Dũng'
+      name: name || 'Mr Dũng'
     });
     console.log(finalMessage)
     messages[messages.length - 1].content = finalMessage
