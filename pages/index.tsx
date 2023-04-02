@@ -92,10 +92,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Finhay GPT</title>
+        <title>NHY</title>
         <meta
           name="description"
-          content="Finhay GPT"
+          content="NHY"
         />
         <meta
           name="viewport"
