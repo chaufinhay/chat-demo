@@ -1,60 +1,54 @@
-import {Message} from '@/types';
 import {OpenAIStream} from '@/utils';
-// import {PromptTemplate} from 'langchain';
+import {PromptTemplate} from 'langchain';
 import {pinecone} from '@/utils/pinecone-client';
 import {PINECONE_INDEX_NAME, PINECONE_NAME_SPACE} from '@/config/pinecone';
 import {NextApiRequest, NextApiResponse} from 'next';
-// import {PineconeStore} from 'langchain/vectorstores';
-// import {OpenAIEmbeddings} from 'langchain/embeddings';
+import {PineconeStore} from 'langchain/vectorstores';
+import {OpenAIEmbeddings} from 'langchain/embeddings';
 
-// export const config = {
-//   runtime: "edge"
-// };
+const index = pinecone.Index(PINECONE_INDEX_NAME);
+const vectorStore = await PineconeStore.fromExistingIndex(
+    new OpenAIEmbeddings({}),
+    {
+      pineconeIndex: index,
+      textKey: 'text',
+      namespace: PINECONE_NAME_SPACE
+    }
+);
 
-const template = `  
-# Ví dụ hội thoại mẫu #
-Mr Dũng: Bên mình thành công ty chứng khoán vina rồi, Sao chưa thấy bán chứng khoán trên sàn HNX vậy?
-AI: Chào anh Dũng, Finhay cảm ơn anh đã tin tưởng sử dụng dịch vụ của Finhay. Trong thời gian đầu, để người dùng dễ thích nghi với thị trường chứng khoán nên Finhay chỉ có những mã cổ phiếu có thanh khoản tốt và tình hình hoạt động kinh doanh khả quan trên thị trường ạ. Dự kiến trong những phiên bản sau của Finhay sẽ hoàn thiện và bổ sung thêm nhiều mã cổ phiếu ạ.
+const template = `
+Bạn tên là Nhy. Bạn là nhân viên công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
 
-# Ngữ cảnh #
 {context}
 
-Bạn tên là Nhy. Bạn là nhân viên công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự. Kết thúc câu có thể thêm từ "nha", "ạ" và "nhé" để tạo cảm giác trẻ trung. Chỉ sử dụng "anh"/"chị" khi nói với khách hàng, không sử dụng "bạn". Trả lời xong thì dừng luôn đừng hỏi khách còn câu hỏi gì nữa không. Đừng hỏi khách còn cần thêm thông tin gì không. Đừng hỏi khách muốn tìm hiểu thêm gì về sản phẩm Finhay ở cuối câu.
+Mr Dũng: Giới thiệu về VNSC
+Nhy: VNSC là công ty chứng khoán mà Finhay đã mua lại và trở thành chủ quản anh Dũng ạ. VNSC được cấp phép và giám sát hoạt động trực tiếp bởi Uỷ ban Chứng khoán Nhà nước và đã được cấp Giấy phép hoạt động phân phối Chứng chỉ Quỹ. Sau khi hoàn tất lộ trình chuyển đổi, người sử dụng sản phẩm & dịch vụ trên ứng dụng của Finhay sẽ được bảo hộ trực tiếp bởi hệ thống pháp luật Chứng khoán.
+Mr Dũng: Tên em là gì?
+Nhy: Tên em là Nhy ạ.
+Mr Dũng: Ai sáng lập finhay?
+Nhy: Finhay được sáng lập bởi anh Nghiêm Xuân Huy ạ.
+Mr Dũng: Ai là CTO (Giám đốc công nghệ) của Finhay?
+Nhy: CTO của Finhay là anh Hoàng Minh Châu ạ.
 
-# Câu hỏi #
 {name}: {question}
-AI: `;
-
+Nhy: `;
 
 
 const handler = async (req: NextApiRequest,
                        res: NextApiResponse,) => {
   try {
-    const { messages } = req.body
-    console.log(messages)
+    const {messages} = req.body
 
-    // const index = pinecone.Index(PINECONE_INDEX_NAME);
-    // console.log(index)
-// const vectorStore = await PineconeStore.fromExistingIndex(
-//     new OpenAIEmbeddings({}),
-//     {
-//       pineconeIndex: index,
-//       textKey: 'text',
-//       namespace: PINECONE_NAME_SPACE
-//     }
-// );
-
-
-    // const promptTemplate = new PromptTemplate({template, inputVariables: ["context", "question", 'name']});
+    const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
     const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
-    // const docs = await vectorStore.similaritySearch(sanitizedQuestion, 2);
-    // console.log(docs)
-
-    // messages[messages.length - 1].content = await promptTemplate.format({
-    //   context: docs.map(d => d.pageContent).join("\n\n"),
-    //   question: sanitizedQuestion,
-    //   name: 'Mr Dũng'
-    // });
+    const docs = await vectorStore.similaritySearch(sanitizedQuestion, 2);
+    const finalMessage = await promptTemplate.format({
+      context: docs.map(d => d.pageContent).join('\n\n') || '',
+      question: sanitizedQuestion,
+      name: 'Mr Dũng'
+    });
+    console.log(finalMessage)
+    messages[messages.length - 1].content = finalMessage
 
     const charLimit = 12000;
     let charCount = 0;
@@ -73,7 +67,7 @@ const handler = async (req: NextApiRequest,
     res.json({answer: stream.choices[0].message.content});
   } catch (error) {
     console.error(error);
-    res.status(500).send("error");
+    res.status(500).send('error');
   }
 };
 

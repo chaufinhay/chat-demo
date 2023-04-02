@@ -9,13 +9,7 @@ export const OpenAIStream = async (messages: Message[]) => {
     method: "POST",
     body: JSON.stringify({
       model: OpenAIModel.DAVINCI_TURBO,
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful, friendly, assistant.`
-        },
-        ...messages
-      ],
+      messages,
       max_tokens: 800,
       temperature: 0.0
     })
