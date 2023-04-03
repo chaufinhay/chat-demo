@@ -34,7 +34,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [userName, setUserName] = useLocalStorage('userName', 'Dũng');
+  const [userName, setUserName] = useLocalStorage('userName', '');
   const [userTitle, setUserTitle] = useLocalStorage('userTitle', 'mr');
   const [isShowChat, setIsShowChat] = useState<boolean>(false);
 
@@ -43,6 +43,10 @@ export default function Home() {
   };
 
   const handleStartChat = () => {
+    if (!userName || !userTitle) {
+      alert('Vui lòng nhập đầy đủ thông tin');
+      return;
+    }
     setIsShowChat(true);
     setMessages([
       {
@@ -122,6 +126,7 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="max-w:800 mx:auto mt:10 flex flex:col gap:20">
+                  <img src="/nhyv1.webp" alt="" className={'w:300'}/>
                   <div className={'flex gap:20 ai:center'}>
                     <label className="f:bold f:18" htmlFor="title">Xưng hô</label>
                     <select className={'b:1|solid|gray-80 p:8|10 r:10'} name="title" id="title"
