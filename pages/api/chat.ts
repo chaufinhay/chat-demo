@@ -9,16 +9,17 @@ import {AIPluginTool, Calculator, RequestsGetTool, RequestsPostTool} from 'langc
 import {initializeAgentExecutor} from 'langchain/agents';
 import {ChatOpenAI} from 'langchain/chat_models';
 import { VNSCStockAPI, VNSCValues } from "@/agents/tools/vnsc-stock";
+import {CurrentTimeTool} from '@/agents/tools/CurrentTimeTool';
 
-const index = pinecone.Index(PINECONE_INDEX_NAME);
-const vectorStore = await PineconeStore.fromExistingIndex(
-    new OpenAIEmbeddings({}),
-    {
-      pineconeIndex: index,
-      textKey: 'text',
-      namespace: PINECONE_NAME_SPACE
-    }
-);
+// const index = pinecone.Index(PINECONE_INDEX_NAME);
+// const vectorStore = await PineconeStore.fromExistingIndex(
+//     new OpenAIEmbeddings({}),
+//     {
+//       pineconeIndex: index,
+//       textKey: 'text',
+//       namespace: PINECONE_NAME_SPACE
+//     }
+// );
 
 const template = `
 Bạn tên là Nhy. Bạn là một trí tuệ nhân tạo phát triển bởi công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
@@ -87,13 +88,7 @@ const handler = async (req: NextApiRequest,
     // res.json({answer: stream.choices[0].message.content});
 
     const model = new ChatOpenAI({ temperature: 0 });
-    const tools = [new Calculator(), new VNSCStockAPI(
-      'stock_price',
-      'this tool will return the stock price of a company',
-      {
-        'STOCK_TICKER': null,
-      }
-    )];
+    const tools = [new Calculator(), new VNSCStockAPI(), new CurrentTimeTool()];
 
     const executor = await initializeAgentExecutor(
         tools,
@@ -102,7 +97,7 @@ const handler = async (req: NextApiRequest,
     );
     console.log("Loaded agent.");
 
-    const input = `what is the stock price of HPG`;
+    const input = `Tìm giá của HPG? Bây giờ là mấy giờ?`;
 
     console.log(`Executing with input "${input}"...`);
 
