@@ -5,6 +5,9 @@ import {PINECONE_INDEX_NAME, PINECONE_NAME_SPACE} from '@/config/pinecone';
 import {NextApiRequest, NextApiResponse} from 'next';
 import {PineconeStore} from 'langchain/vectorstores';
 import {OpenAIEmbeddings} from 'langchain/embeddings';
+import {AIPluginTool, Calculator, RequestsGetTool, RequestsPostTool} from 'langchain/tools';
+import {initializeAgentExecutor} from 'langchain/agents';
+import {ChatOpenAI} from 'langchain/chat_models';
 
 const index = pinecone.Index(PINECONE_INDEX_NAME);
 const vectorStore = await PineconeStore.fromExistingIndex(
@@ -53,34 +56,63 @@ Nhy: `;
 const handler = async (req: NextApiRequest,
                        res: NextApiResponse,) => {
   try {
-    const {messages, name} = req.body
+    // const {messages, name} = req.body
+    //
+    // const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
+    // const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
+    // const docs = await vectorStore.similaritySearch(sanitizedQuestion, 2);
+    // const finalMessage = await promptTemplate.format({
+    //   context: docs.map(d => d.pageContent).join('\n\n') || '',
+    //   question: sanitizedQuestion,
+    //   name: name || 'Mr Dũng'
+    // });
+    // console.log(finalMessage)
+    // messages[messages.length - 1].content = finalMessage
+    //
+    // const charLimit = 12000;
+    // let charCount = 0;
+    // let messagesToSend = [];
+    //
+    // for (let i = 0; i < messages.length; i++) {
+    //   const message = messages[i];
+    //   if (charCount + message.content.length > charLimit) {
+    //     break;
+    //   }
+    //   charCount += message.content.length;
+    //   messagesToSend.push(message);
+    // }
+    //
+    // const stream = await OpenAIStream(messagesToSend);
+    // res.json({answer: stream.choices[0].message.content});
 
-    const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
-    const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
-    const docs = await vectorStore.similaritySearch(sanitizedQuestion, 2);
-    const finalMessage = await promptTemplate.format({
-      context: docs.map(d => d.pageContent).join('\n\n') || '',
-      question: sanitizedQuestion,
-      name: name || 'Mr Dũng'
-    });
-    console.log(finalMessage)
-    messages[messages.length - 1].content = finalMessage
+    const model = new ChatOpenAI({ temperature: 0 });
+    const tools = [new Calculator()];
 
-    const charLimit = 12000;
-    let charCount = 0;
-    let messagesToSend = [];
+    const executor = await initializeAgentExecutor(
+        tools,
+        model,
+        "chat-zero-shot-react-description"
+    );
+    console.log("Loaded agent.");
 
-    for (let i = 0; i < messages.length; i++) {
-      const message = messages[i];
-      if (charCount + message.content.length > charLimit) {
-        break;
-      }
-      charCount += message.content.length;
-      messagesToSend.push(message);
-    }
+    const input = `kết quả của 100x100?`;
 
-    const stream = await OpenAIStream(messagesToSend);
-    res.json({answer: stream.choices[0].message.content});
+    console.log(`Executing with input "${input}"...`);
+
+    const result = await executor.call({ input });
+
+    console.log(`Got output ${result.output}`);
+
+    console.log(
+        `Got intermediate steps ${JSON.stringify(
+            result.intermediateSteps,
+            null,
+            2
+        )}`
+    );
+
+
+    res.json({answer: "what"});
   } catch (error) {
     console.error(error);
     res.status(500).send('error');
