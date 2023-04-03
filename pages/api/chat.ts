@@ -8,6 +8,7 @@ import {OpenAIEmbeddings} from 'langchain/embeddings';
 import {AIPluginTool, Calculator, RequestsGetTool, RequestsPostTool} from 'langchain/tools';
 import {initializeAgentExecutor} from 'langchain/agents';
 import {ChatOpenAI} from 'langchain/chat_models';
+import { VNSCStockAPI, VNSCValues } from "@/agents/tools/vnsc-stock";
 
 const index = pinecone.Index(PINECONE_INDEX_NAME);
 const vectorStore = await PineconeStore.fromExistingIndex(
@@ -86,7 +87,13 @@ const handler = async (req: NextApiRequest,
     // res.json({answer: stream.choices[0].message.content});
 
     const model = new ChatOpenAI({ temperature: 0 });
-    const tools = [new Calculator()];
+    const tools = [new Calculator(), new VNSCStockAPI(
+      'stock_price',
+      'this tool will return the stock price of a company',
+      {
+        'STOCK_TICKER': null,
+      }
+    )];
 
     const executor = await initializeAgentExecutor(
         tools,
@@ -95,7 +102,7 @@ const handler = async (req: NextApiRequest,
     );
     console.log("Loaded agent.");
 
-    const input = `kết quả của 100x100?`;
+    const input = `what is the stock price of HPG`;
 
     console.log(`Executing with input "${input}"...`);
 
@@ -110,7 +117,6 @@ const handler = async (req: NextApiRequest,
             2
         )}`
     );
-
 
     res.json({answer: "what"});
   } catch (error) {
