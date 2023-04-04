@@ -1,15 +1,11 @@
-import {OpenAIStream} from '@/utils';
-import {PromptTemplate} from 'langchain';
-import {pinecone} from '@/utils/pinecone-client';
-import {PINECONE_INDEX_NAME, PINECONE_NAME_SPACE} from '@/config/pinecone';
 import {NextApiRequest, NextApiResponse} from 'next';
-import {PineconeStore} from 'langchain/vectorstores';
-import {OpenAIEmbeddings} from 'langchain/embeddings';
-import {AIPluginTool, Calculator, RequestsGetTool, RequestsPostTool} from 'langchain/tools';
+import {Calculator} from 'langchain/tools';
 import {initializeAgentExecutor} from 'langchain/agents';
 import {ChatOpenAI} from 'langchain/chat_models';
-import { VNSCStockAPI, VNSCValues } from "@/agents/tools/vnsc-stock";
+import {VNSCStockAPI} from '@/agents/tools/vnsc-stock';
 import {CurrentTimeTool} from '@/agents/tools/CurrentTimeTool';
+import {VNSCAsset} from '@/agents/tools/VNSCAsset';
+import {verbose} from 'sqlite3';
 
 // const index = pinecone.Index(PINECONE_INDEX_NAME);
 // const vectorStore = await PineconeStore.fromExistingIndex(
@@ -87,33 +83,41 @@ const handler = async (req: NextApiRequest,
     // const stream = await OpenAIStream(messagesToSend);
     // res.json({answer: stream.choices[0].message.content});
 
-    const model = new ChatOpenAI({ temperature: 0 });
-    const tools = [new Calculator(), new VNSCStockAPI(), new CurrentTimeTool()];
+    const model = new ChatOpenAI({temperature: 0});
+    const tools = [
+      new VNSCStockAPI(),
+      new VNSCAsset()
+    ];
 
     const executor = await initializeAgentExecutor(
         tools,
         model,
-        "chat-zero-shot-react-description"
+        'chat-zero-shot-react-description',
+        true,
     );
-    console.log("Loaded agent.");
 
-    const input = `Tìm giá của HPG? Bây giờ là mấy giờ?`;
+    const input = `thông tin tài sản của tôi`;
 
     console.log(`Executing with input "${input}"...`);
 
-    const result = await executor.call({ input });
+    const result = await executor.call({input});
 
-    console.log(`Got output ${result.output}`);
+    let context = '';
+    result.intermediateSteps.map((step: any) => {
+      context += step.observation.toString();
+      context += '\n';
+    });
+    context += result.output.toString();
 
     console.log(
         `Got intermediate steps ${JSON.stringify(
-            result.intermediateSteps,
+            result,
             null,
             2
         )}`
     );
 
-    res.json({answer: "what"});
+    res.json({answer: context});
   } catch (error) {
     console.error(error);
     res.status(500).send('error');

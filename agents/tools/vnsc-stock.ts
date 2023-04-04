@@ -6,8 +6,8 @@ export class VNSCStockAPI extends Tool {
 
   constructor() {
     super();
-    this.name = 'stock_price';
-    this.description = `Đây là công cụ lấy giá của một mã chứng khoán. Tham số truyền vào là mã chứng khoán. Ví dụ: VNM.`;
+    this.name = 'find_stock_price';
+    this.description = `Đây là công cụ lấy giá của một mã chứng khoán. Tham số truyền vào là mã chứng khoán.`;
   }
 
   async _call(arg: string): Promise<string> {
