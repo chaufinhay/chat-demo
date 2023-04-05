@@ -1,11 +1,16 @@
 import {NextApiRequest, NextApiResponse} from 'next';
 import {Calculator} from 'langchain/tools';
-import {initializeAgentExecutor} from 'langchain/agents';
+import {initializeAgentExecutor, Tool} from 'langchain/agents';
 import {ChatOpenAI} from 'langchain/chat_models';
-import {VNSCStockAPI} from '@/agents/tools/vnsc-stock';
+import {VNSCStockInformation} from '@/agents/tools/VNSCStockInformation';
 import {CurrentTimeTool} from '@/agents/tools/CurrentTimeTool';
 import {VNSCAsset} from '@/agents/tools/VNSCAsset';
 import {verbose} from 'sqlite3';
+import {VNSCStock} from '@/agents/tools/VNSCStock';
+import {PromptTemplate} from 'langchain';
+import {OpenAIStream} from '@/utils';
+import {Message, OpenAIModel} from '@/types';
+
 
 // const index = pinecone.Index(PINECONE_INDEX_NAME);
 // const vectorStore = await PineconeStore.fromExistingIndex(
@@ -51,6 +56,47 @@ Nhy: CTO của Finhay là anh Hoàng Minh Châu ạ.
 Nhy: `;
 
 
+export const PREFIX = `Trả lời các câu hỏi sau đây một cách tốt nhất có thể. Bạn có thể sử dụng các công cụ sau:`;
+
+export const formatInstructions = (
+    toolNames: string
+) => `Dùng định dạng sau:
+
+Câu hỏi: câu hỏi mà bạn phải trả lời
+Suy nghĩ: bạn nên luôn suy nghĩ về việc gì để làm
+Action: hành động cần thực hiện, có thể là một trong những công cụ sau [${toolNames}]
+Action Input: the input to the action`;
+export const SUFFIX = `Bắt đầu!
+
+Câu hỏi: {input}
+Suy nghĩ: `;
+
+const parseAction = (response: string, tools: Tool[]) => {
+  const actionRegex = /Action:\s*(.*)/;
+  const match = response.match(actionRegex);
+  if (!match)
+    return 'none'
+
+  const actionValue = match[1];
+  const tool = tools.find(tool => actionValue.includes(tool.name));
+  if (!tool)
+    return 'none';
+  return tool.name;
+}
+
+const parseInput = (response: string) => {
+  const actionRegex = /Action Input:\s*(.*)/;
+  const match = response.match(actionRegex);
+  if (!match)
+    return 'none'
+
+  const inputValue = match[1];
+  if (!inputValue)
+    return 'none';
+  return inputValue;
+}
+
+
 const handler = async (req: NextApiRequest,
                        res: NextApiResponse,) => {
   try {
@@ -79,45 +125,46 @@ const handler = async (req: NextApiRequest,
     //   charCount += message.content.length;
     //   messagesToSend.push(message);
     // }
-    //
+
     // const stream = await OpenAIStream(messagesToSend);
     // res.json({answer: stream.choices[0].message.content});
 
-    const model = new ChatOpenAI({temperature: 0});
     const tools = [
-      new VNSCStockAPI(),
-      new VNSCAsset()
+      new VNSCStock(),
+      new VNSCAsset(),
+        new VNSCStockInformation(),
     ];
 
-    const executor = await initializeAgentExecutor(
-        tools,
-        model,
-        'chat-zero-shot-react-description',
-        true,
-    );
+    const toolStrings = tools
+        .map((tool) => `${tool.name}: ${tool.description}`)
+        .join("\n");
+    const toolNames = tools.map((tool) => tool.name).join("\n");
+    const instructions = formatInstructions(toolNames);
+    const template = [PREFIX, toolStrings, instructions, SUFFIX].join("\n\n");
 
-    const input = `thông tin tài sản của tôi`;
+    const promptTemplate = new PromptTemplate({template, inputVariables: ['input']});
+    const input = `Tìm thông tin về mã hpg`;
+    const finalMessage = await promptTemplate.format({input});
+    console.log(`Executing with input "${finalMessage}"...`);
 
-    console.log(`Executing with input "${input}"...`);
+    const stream = await OpenAIStream([
+      {role: 'user', content: finalMessage},
+    ]);
+    const answer = stream.choices[0].message.content;
+    const action = parseAction(answer, tools);
+    const actionInput = parseInput(answer);
+    console.log(answer)
+    if (action !== 'none') {
+      const tool = tools.find(tool => tool.name === action);
+      const context = await tool?.call(actionInput);
+      console.log(context);
+      return res.json({answer: context});
 
-    const result = await executor.call({input});
+    }
 
-    let context = '';
-    result.intermediateSteps.map((step: any) => {
-      context += step.observation.toString();
-      context += '\n';
-    });
-    context += result.output.toString();
 
-    console.log(
-        `Got intermediate steps ${JSON.stringify(
-            result,
-            null,
-            2
-        )}`
-    );
 
-    res.json({answer: context});
+    res.json({answer: 'what'});
   } catch (error) {
     console.error(error);
     res.status(500).send('error');
