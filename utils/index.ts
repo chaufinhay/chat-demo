@@ -11,7 +11,7 @@ export const OpenAIStream = async (messages: Message[]) => {
       model: OpenAIModel.DAVINCI_TURBO,
       messages,
       max_tokens: 1000,
-      temperature: 0.0
+      temperature: 0.4
     })
   });
 
