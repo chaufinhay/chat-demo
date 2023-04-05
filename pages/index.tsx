@@ -126,7 +126,6 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="max-w:800 mx:auto mt:10 flex flex:col gap:20">
-                  <img src="/nhyv1.webp" alt="" className={'w:300'}/>
                   <div className={'flex gap:20 ai:center'}>
                     <label className="f:bold f:18" htmlFor="title">Xưng hô</label>
                     <select className={'b:1|solid|gray-80 p:8|10 r:10'} name="title" id="title"

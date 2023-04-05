@@ -12,6 +12,6 @@ export class VNSCAsset extends Tool {
 
   async _call(arg: string): Promise<string> {
     console.log(this.name, arg);
-    return 'Tổng tài sản của khách hàng là 100.000.000 đồng. Trong đó tiểu khoản thường có 50.000.000 đồng, tiểu khoản margin có 50.000.000 đồng.';
+    return 'Nhy có quyền truy cập tài sản của khách hàng. Tổng tài sản của khách hàng là 100.000.000 đồng. Trong đó tiểu khoản thường có 50.000.000 đồng, tiểu khoản margin có 50.000.000 đồng.';
   }
 }
