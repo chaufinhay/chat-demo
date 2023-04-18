@@ -1,19 +1,4 @@
-import Redis, { RedisOptions } from 'ioredis';
 import Cache from 'es-cache';
-
-const config = {
-    host: process.env.REDIS_HOST,
-    password: process.env.REDIS_PASSWORD,
-    port: process.env.REDIS_PORT,
-  };
-
-function getRedisConfiguration(): {
-    port: Maybe<number>;
-    host: Maybe<string>;
-    password: Maybe<string>;
-} {
-    return config;
-}
 
 async function getFinancialHighlights (symbol: String): Promise<string> {
       const url = `https://api4.fialda.com/api/services/app/TechnicalAnalysis/GetFinancialHighlights?symbol=${symbol}`
