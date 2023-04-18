@@ -14,6 +14,7 @@ import {pinecone} from '@/utils/pinecone-client';
 import {PINECONE_INDEX_NAME, PINECONE_NAME_SPACE} from '@/config/pinecone';
 import {PineconeStore} from 'langchain/vectorstores';
 import {OpenAIEmbeddings} from 'langchain/embeddings';
+import { VNSCStockFundamental } from '@/agents/tools/VNSCStockFundamental';
 
 
 const index = pinecone.Index(PINECONE_INDEX_NAME);
@@ -95,6 +96,7 @@ const findContextForInput = async (input: string) => {
     new VNSCStock(),
     new VNSCAsset(),
     new VNSCStockInformation(),
+    new VNSCStockFundamental(),
   ];
 
   const toolStrings = tools
@@ -114,11 +116,11 @@ const findContextForInput = async (input: string) => {
   const answer = stream.choices[0].message.content;
   const action = parseAction(answer, tools);
   const actionInput = parseInput(answer);
-  console.log(answer)
+  console.log(`=== answer ===\n "${answer}" \n===`)
   if (action !== 'none') {
     const tool = tools.find(tool => tool.name === action);
     const context = await tool?.call(actionInput);
-    console.log(context);
+    console.log(`=== context ===\n "${context}" \n===`)
     return context
   }
   return '';
