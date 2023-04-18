@@ -1,4 +1,5 @@
 import Redis, { RedisOptions } from 'ioredis';
+import Cache from 'es-cache';
 
 const config = {
     host: process.env.REDIS_HOST,
@@ -16,6 +17,7 @@ function getRedisConfiguration(): {
 
 async function getFinancialHighlights (symbol: String): Promise<string> {
       const url = `https://api4.fialda.com/api/services/app/TechnicalAnalysis/GetFinancialHighlights?symbol=${symbol}`
+      console.log(`getFinancialHighlights:: Fetching ${url}...`)
       const response = await fetch(url, {
           "headers": {
           ".aspnetcore.culture": "en-US",
@@ -55,4 +57,30 @@ async function getFinancialHighlights (symbol: String): Promise<string> {
       return text;
   }
 
-export { getFinancialHighlights }
+var cache = new Cache();
+
+function addCache(name: string, callback: (input: string) => any) {
+    return async function (input: any) {
+      try {
+        const key = `${name} - ${input}`;
+        console.log(`trying get data from cache: ${key}`)
+        const cachedValue = await cache.get(key);
+        if (cachedValue) {
+          console.log(`cache found: ${cachedValue}`)
+          return cachedValue;
+        }
+        const value = await callback(input);
+        console.log(`cache not found, new value fetched: ${value}`)
+        await cache.put(key, value);
+        return value;
+      }
+      catch (e) {
+        console.log(`Error while caching ${name} - ${input}: ${e}`)
+        return `Error while caching ${name} - ${input}: ${e}`;
+      }
+    };
+  }
+
+const getFinancialHighlightsWithCache = addCache('getFinancialHighlights', getFinancialHighlights)
+
+export { getFinancialHighlightsWithCache as getFinancialHighlights }
