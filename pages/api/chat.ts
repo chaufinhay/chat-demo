@@ -86,7 +86,7 @@ const parseInput = (response: string) => {
   return inputValue;
 };
 
-const findContextForInput = async (input: string) => {
+const findContextForMessageHistory = async (messages: any[]) => {
   const tools = [
     new VNSCStock(),
     new VNSCAsset(),
@@ -101,8 +101,21 @@ const findContextForInput = async (input: string) => {
   const instructions = formatInstructions(toolNames);
   const template = [PREFIX, toolStrings, instructions, SUFFIX].join('\n\n');
 
+  const charLimit = 12000;
+  let charCount = template.length;
+  let messagesToSend = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    if (charCount + message.content.length > charLimit) {
+      break;
+    }
+    charCount += message.content.length;
+    messagesToSend.push(message);
+  }
+
   const promptTemplate = new PromptTemplate({template, inputVariables: ['input']});
-  const finalMessage = await promptTemplate.format({input});
+  const finalMessage = await promptTemplate.format({input: messagesToSend.map(m => m.content).join('\n\n')});
   console.log(`Executing with input "${finalMessage}"...`);
 
   const stream = await OpenAIStream([
@@ -134,7 +147,7 @@ const handler = async (req: NextApiRequest,
     const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
     const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
 
-    let context = await findContextForInput(sanitizedQuestion);
+    let context = await findContextForMessageHistory(messages);
     if (!context) {
       context = await searchForContext(sanitizedQuestion);
     }
