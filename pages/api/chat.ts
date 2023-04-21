@@ -1,20 +1,15 @@
 import {NextApiRequest, NextApiResponse} from 'next';
-import {Calculator} from 'langchain/tools';
-import {initializeAgentExecutor, Tool} from 'langchain/agents';
-import {ChatOpenAI} from 'langchain/chat_models';
+import {Tool} from 'langchain/agents';
 import {VNSCStockInformation} from '@/agents/tools/VNSCStockInformation';
-import {CurrentTimeTool} from '@/agents/tools/CurrentTimeTool';
 import {VNSCAsset} from '@/agents/tools/VNSCAsset';
-import {verbose} from 'sqlite3';
 import {VNSCStock} from '@/agents/tools/VNSCStock';
 import {PromptTemplate} from 'langchain';
 import {OpenAIStream} from '@/utils';
-import {Message, OpenAIModel} from '@/types';
 import {pinecone} from '@/utils/pinecone-client';
 import {PINECONE_INDEX_NAME, PINECONE_NAME_SPACE} from '@/config/pinecone';
 import {PineconeStore} from 'langchain/vectorstores';
 import {OpenAIEmbeddings} from 'langchain/embeddings';
-import { VNSCStockFundamental } from '@/agents/tools/VNSCStockFundamental';
+import {VNSCStockFundamental} from '@/agents/tools/VNSCStockFundamental';
 
 
 const index = pinecone.Index(PINECONE_INDEX_NAME);
@@ -70,26 +65,26 @@ const parseAction = (response: string, tools: Tool[]) => {
   const actionRegex = /Action:\s*(.*)/;
   const match = response.match(actionRegex);
   if (!match)
-    return 'none'
+    return 'none';
 
   const actionValue = match[1];
   const tool = tools.find(tool => actionValue.includes(tool.name));
   if (!tool)
     return 'none';
   return tool.name;
-}
+};
 
 const parseInput = (response: string) => {
   const actionRegex = /Action Input:\s*(.*)/;
   const match = response.match(actionRegex);
   if (!match)
-    return 'none'
+    return 'none';
 
   const inputValue = match[1];
   if (!inputValue)
     return 'none';
   return inputValue;
-}
+};
 
 const findContextForInput = async (input: string) => {
   const tools = [
@@ -116,25 +111,25 @@ const findContextForInput = async (input: string) => {
   const answer = stream.choices[0].message.content;
   const action = parseAction(answer, tools);
   const actionInput = parseInput(answer);
-  console.log(`=== answer ===\n "${answer}" \n===`)
+  console.log(`=== answer ===\n "${answer}" \n===`);
   if (action !== 'none') {
     const tool = tools.find(tool => tool.name === action);
     const context = await tool?.call(actionInput);
-    console.log(`=== context ===\n "${context}" \n===`)
-    return context
+    console.log(`=== context ===\n "${context}" \n===`);
+    return context;
   }
   return '';
-}
+};
 
 const searchForContext = async (input: string) => {
   const docs = await vectorStore.similaritySearch(input, 2);
-  return docs.map(d => d.pageContent).join('\n\n') || ''
-}
+  return docs.map(d => d.pageContent).join('\n\n') || '';
+};
 
 const handler = async (req: NextApiRequest,
                        res: NextApiResponse,) => {
   try {
-    const {messages, name} = req.body
+    const {messages, name} = req.body;
 
     const promptTemplate = new PromptTemplate({template, inputVariables: ['context', 'question', 'name']});
     const sanitizedQuestion = messages[messages.length - 1].content.trim().replaceAll('\n', ' ');
@@ -149,8 +144,8 @@ const handler = async (req: NextApiRequest,
       question: sanitizedQuestion,
       name: name || 'Mr Dũng'
     });
-    console.log(finalMessage)
-    messages[messages.length - 1].content = finalMessage
+    console.log(finalMessage);
+    messages[messages.length - 1].content = finalMessage;
 
     const charLimit = 12000;
     let charCount = 0;

@@ -38,33 +38,32 @@ async function getFinancialHighlights (symbol: String): Promise<string> {
       Lợi nhuận: ${(last_quarter.profit / 1000000000).toFixed(4)} tỉ đồng
       Tỉ suất lợi nhuận: ${(last_quarter.profitMargin * 100).toFixed(2)}%
       Tăng trưởng lợi nhuận so với cùng kỳ năm trước: ${(last_quarter.profit_Growth_YoY * 100).toFixed(2)}%
-      `
-      return text;
-  }
+      `;
+  return text;
+}
 
-var cache = new Cache();
+const cache = new Map();
 
 function addCache(name: string, callback: (input: string) => any) {
-    return async function (input: any) {
-      try {
-        const key = `${name} - ${input}`;
-        console.log(`trying get data from cache: ${key}`)
-        const cachedValue = await cache.get(key);
-        if (cachedValue) {
-          console.log(`cache found: ${cachedValue}`)
-          return cachedValue;
-        }
-        const value = await callback(input);
-        console.log(`cache not found, new value fetched: ${value}`)
-        await cache.put(key, value);
-        return value;
+  return async function (input: any) {
+    try {
+      const key = `${name} - ${input}`;
+      console.log(`trying get data from cache: ${key}`);
+      const cachedValue = await cache.get(key);
+      if (cachedValue) {
+        console.log(`cache found: ${cachedValue}`);
+        return cachedValue;
       }
-      catch (e) {
-        console.log(`Error while caching ${name} - ${input}: ${e}`)
-        return `Error while caching ${name} - ${input}: ${e}`;
-      }
-    };
-  }
+      const value = await callback(input);
+      console.log(`cache not found, new value fetched: ${value}`);
+      await cache.set(key, value);
+      return value;
+    } catch (e) {
+      console.log(`Error while caching ${name} - ${input}: ${e}`);
+      return `Error while caching ${name} - ${input}: ${e}`;
+    }
+  };
+}
 
 
 const getFinancialHighlightsWithCache = addCache('getFinancialHighlights', getFinancialHighlights)
