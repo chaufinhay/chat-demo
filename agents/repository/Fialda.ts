@@ -1,5 +1,3 @@
-import Cache from 'es-cache';
-
 async function getFinancialHighlights (symbol: String): Promise<string> {
       const url = `https://api4.fialda.com/api/services/app/TechnicalAnalysis/GetFinancialHighlights?symbol=${symbol}`
       console.log(`getFinancialHighlights:: Fetching ${url}...`)
