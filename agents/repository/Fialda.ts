@@ -66,6 +66,13 @@ function addCache(name: string, callback: (input: string) => any) {
     };
   }
 
+
 const getFinancialHighlightsWithCache = addCache('getFinancialHighlights', getFinancialHighlights)
 
-export { getFinancialHighlightsWithCache as getFinancialHighlights }
+const getListOfFinancialHighlights = (symbolList: Array<string>) => {
+  return Promise.all(symbolList.map((symbol: string) => getFinancialHighlightsWithCache(symbol))).then((values: Array<string>) => {
+    return values.join('\n')
+  })
+}
+
+export { getFinancialHighlightsWithCache as getFinancialHighlights, getListOfFinancialHighlights }
