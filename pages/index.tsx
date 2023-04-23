@@ -51,7 +51,7 @@ export default function Home() {
     setMessages([
       {
         role: 'assistant',
-        content: `Chào ${userTitle === 'mr' ? 'anh' : 'chị'} ${userName}. Em là Nhy, trí tuệ nhân tạo phát triển bởi Finhay để hỗ trợ khách hàng đầu tư ạ.`
+        content: `Chào ${userTitle === 'mr' ? 'anh' : 'chị'} ${userName}. Em là Nhy, trí tuệ nhân tạo phát triển bởi VNSC by Finhay để hỗ trợ khách hàng đầu tư ạ.`
       }
     ]);
   }

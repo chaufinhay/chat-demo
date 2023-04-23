@@ -58,7 +58,7 @@ function addCache(name: string, callback: (input: string) => any) {
       return value;
     } catch (e) {
       console.log(`Error while caching ${name} - ${input}: ${e}`);
-      return `Error while caching ${name} - ${input}: ${e}`;
+      return `Error while caching ${name} - ${input}`;
     }
   };
 }

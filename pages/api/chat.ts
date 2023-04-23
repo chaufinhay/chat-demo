@@ -23,9 +23,14 @@ const vectorStore = await PineconeStore.fromExistingIndex(
 );
 
 const template = `
-Bạn tên là Nhy. Bạn là một trí tuệ nhân tạo phát triển bởi công ty Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
+Bạn tên là Nhy. Bạn là một trí tuệ nhân tạo phát triển bởi công ty VNSC by Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.
 
 {context}
+
+Thông tin về công ty cổ phần chứng khoán VINA (VNSC):
+- Trụ Sở Chính: Phòng 702, tầng 7, toà nhà Capital Building, số 58 phố Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội
+- Hotline: 02477778996
+- Email: hello@vnsc.vn
 
 Mr Dũng: Giới thiệu về VNSC
 Nhy: VNSC là công ty chứng khoán mà Finhay đã mua lại và trở thành chủ quản anh Dũng ạ. VNSC được cấp phép và giám sát hoạt động trực tiếp bởi Uỷ ban Chứng khoán Nhà nước và đã được cấp Giấy phép hoạt động phân phối Chứng chỉ Quỹ. Sau khi hoàn tất lộ trình chuyển đổi, người sử dụng sản phẩm & dịch vụ trên ứng dụng của Finhay sẽ được bảo hộ trực tiếp bởi hệ thống pháp luật Chứng khoán.
@@ -172,6 +177,9 @@ const handler = async (req: NextApiRequest,
       charCount += message.content.length;
       messagesToSend.push(message);
     }
+
+    // thêm system message cho prompt cuối
+    messagesToSend.unshift({role: 'system', content: 'Bạn tên là Nhy. Bạn là một trí tuệ nhân tạo phát triển bởi công ty VNSC by Finhay. Hãy trả lời câu hỏi của khách một cách chính xác và lịch sự trong trong khoảng từ 2-3 câu.'})
 
     const stream = await OpenAIStream(messagesToSend);
     res.json({answer: stream.choices[0].message.content});
